@@ -227,6 +227,7 @@ export default function PublicBoardView() {
                               comments={card.comments ?? []}
                               attachments={card.attachments}
                               dueDate={card.dueDate ?? null}
+                              priority={card.priority}
                             />
                           </Link>
                         );

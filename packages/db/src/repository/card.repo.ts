@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm";
 
 import type { dbClient } from "@kan/db/client";
+import type { CardPriority } from "@kan/shared/constants";
 import {
   cardActivities,
   cardAttachments,
@@ -45,6 +46,7 @@ export const create = async (
     workspaceId: number;
     position: "start" | "end";
     dueDate?: Date | null;
+    priority?: CardPriority | null;
   },
 ) => {
   return db.transaction(async (tx) => {
@@ -106,6 +108,7 @@ export const create = async (
         index: index,
         cardNumber,
         dueDate: cardInput.dueDate ?? null,
+        priority: cardInput.priority ?? null,
       })
       .returning({
         id: cards.id,
@@ -204,6 +207,7 @@ export const update = async (
     title?: string;
     description?: string | null;
     dueDate?: Date | null;
+    priority?: CardPriority | null;
   },
   args: {
     cardPublicId: string;
@@ -215,6 +219,8 @@ export const update = async (
       title: cardInput.title,
       description: cardInput.description,
       dueDate: cardInput.dueDate !== undefined ? cardInput.dueDate : undefined,
+      priority:
+        cardInput.priority !== undefined ? cardInput.priority : undefined,
       updatedAt: new Date(),
     })
     .where(and(eq(cards.publicId, args.cardPublicId), isNull(cards.deletedAt)))
@@ -224,6 +230,7 @@ export const update = async (
       title: cards.title,
       description: cards.description,
       dueDate: cards.dueDate,
+      priority: cards.priority,
     });
 
   return result;
@@ -259,6 +266,7 @@ export const getByPublicId = (db: dbClient, cardPublicId: string) => {
       description: true,
       listId: true,
       dueDate: true,
+      priority: true,
     },
     with: {
       list: {
@@ -295,6 +303,7 @@ export const bulkCreate = async (
     workspaceId: number;
     index: number;
     importId?: number;
+    priority?: CardPriority | null;
   }[],
 ) => {
   if (cardInput.length === 0) return [];
@@ -344,6 +353,7 @@ export const bulkCreate = async (
       index: number;
       cardNumber: number;
       importId?: number;
+      priority?: CardPriority | null;
     }[] = [];
 
     // For each list, append incoming cards after current max index, preserving incoming order
@@ -372,6 +382,7 @@ export const bulkCreate = async (
           index: nextIndex++,
           cardNumber,
           importId: it.importId,
+          priority: it.priority ?? null,
         });
       }
     }
@@ -488,6 +499,7 @@ export const getWithListAndMembersByPublicId = async (
       title: true,
       description: true,
       dueDate: true,
+      priority: true,
       createdBy: true,
       cardNumber: true,
       index: true,
@@ -879,6 +891,7 @@ export const reorder = async (
         title: true,
         description: true,
         dueDate: true,
+        priority: true,
       },
       where: eq(cards.id, card.id),
     });

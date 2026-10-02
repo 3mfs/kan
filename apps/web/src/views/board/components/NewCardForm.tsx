@@ -22,6 +22,7 @@ import DateSelector from "~/components/DateSelector";
 import Editor from "~/components/Editor";
 import Input from "~/components/Input";
 import LabelIcon from "~/components/LabelIcon";
+import PrioritySelect from "~/components/PrioritySelect";
 import Toggle from "~/components/Toggle";
 import { useModalFormState } from "~/hooks/useModalFormState";
 import { useModal } from "~/providers/modal";
@@ -75,6 +76,7 @@ export function NewCardForm({
       isCreateAnotherEnabled: false,
       position: "start",
       dueDate: initialDueDate,
+      priority: null,
     },
     resetOnClose: true,
   });
@@ -91,6 +93,7 @@ export function NewCardForm({
   const title = watch("title");
   const description = watch("description");
   const dueDate = watch("dueDate");
+  const priority = watch("priority");
   const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
 
   // Files queued for upload after the card is created. Kept outside of
@@ -156,6 +159,7 @@ export function NewCardForm({
               listId: 2,
               description: "",
               dueDate: args.dueDate ?? null,
+              priority: args.priority ?? null,
               cardNumber: null,
               comments: [],
               checklists: [],
@@ -217,6 +221,7 @@ export function NewCardForm({
           isCreateAnotherEnabled,
           position,
           dueDate: null,
+          priority: null,
         };
         reset(newFormState);
         saveFormState(newFormState);
@@ -315,6 +320,7 @@ export function NewCardForm({
         memberPublicIds: data.memberPublicIds,
         position: data.position,
         dueDate: data.dueDate ?? null,
+        priority: data.priority ?? null,
       });
     } catch {
       // onError already surfaced the failure; keep the files queued for retry.
@@ -606,6 +612,12 @@ export function NewCardForm({
                 </div>
               </>
             )}
+          </div>
+          <div className="w-fit">
+            <PrioritySelect
+              value={priority}
+              onChange={(nextPriority) => setValue("priority", nextPriority)}
+            />
           </div>
           <button
             onClick={(e) => {

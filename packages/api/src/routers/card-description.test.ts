@@ -63,6 +63,7 @@ describe("card description updates", () => {
       description: "<p>Existing description</p>",
       listId: 3,
       dueDate: null,
+      priority: null,
       list: {
         publicId: "list-12345678",
         name: "Todo",
@@ -74,6 +75,7 @@ describe("card description updates", () => {
       title: "Card",
       description: null,
       dueDate: null,
+      priority: null,
     });
     vi.mocked(cardActivityRepo.bulkCreate).mockResolvedValue([]);
     vi.mocked(sendWebhooksForWorkspace).mockResolvedValue(undefined);

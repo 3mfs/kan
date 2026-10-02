@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { cardPriorities } from "@kan/shared/constants";
+
 import {
   checklistResponseSchema,
   labelSchema,
@@ -41,6 +43,7 @@ const boardDetailCardSchema = z.object({
   index: z.number(),
   cardNumber: z.number().nullable(),
   dueDate: z.date().nullable(),
+  priority: z.enum(cardPriorities).nullable(),
   labels: z.array(labelSchema),
   members: z.array(boardCardMemberSchema),
   attachments: z.array(z.object({ publicId: z.string() })),
@@ -85,6 +88,7 @@ const boardSlugCardSchema = z.object({
   description: z.string().nullable(),
   index: z.number(),
   dueDate: z.date().nullable(),
+  priority: z.enum(cardPriorities).nullable(),
   labels: z.array(labelSchema),
   attachments: z.array(z.object({ publicId: z.string() })),
   checklists: z.array(checklistResponseSchema),

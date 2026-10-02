@@ -7,11 +7,14 @@ import {
 } from "react-icons/hi2";
 import { twMerge } from "tailwind-merge";
 
+import type { CardPriority } from "@kan/shared/constants";
+
 import Avatar from "~/components/Avatar";
 import Badge from "~/components/Badge";
 import CircularProgress from "~/components/CircularProgress";
 import LabelIcon from "~/components/LabelIcon";
 import { useLocalisation } from "~/hooks/useLocalisation";
+import { getCardPriorityHeaderClass } from "~/utils/cardPriority";
 import { getAvatarUrl } from "~/utils/helpers";
 
 const Card = ({
@@ -24,6 +27,7 @@ const Card = ({
   comments,
   attachments,
   dueDate,
+  priority,
 }: {
   title: string;
   ticketNumber?: string | null;
@@ -47,6 +51,7 @@ const Card = ({
   comments: { publicId: string }[];
   attachments?: { publicId: string }[];
   dueDate?: Date | null;
+  priority?: CardPriority | null;
 }) => {
   const { dateLocale } = useLocalisation();
   const showYear = dueDate ? !isSameYear(dueDate, new Date()) : false;
@@ -66,101 +71,112 @@ const Card = ({
     description && description.replace(/<[^>]*>/g, "").trim().length > 0;
   const hasAttachments = attachments && attachments.length > 0;
   const hasDueDate = !!dueDate;
+  const priorityHeaderClass = getCardPriorityHeaderClass(priority);
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-md border border-light-200 bg-light-50 px-3 py-2 text-sm text-neutral-900 dark:border-dark-200 dark:bg-dark-200 dark:text-dark-1000 dark:hover:bg-dark-300">
-      {ticketNumber && (
-        <span className="mb-1 text-xs text-light-700 dark:text-dark-800">
-          {ticketNumber}
-        </span>
+    <div
+      className={twMerge(
+        "flex flex-col overflow-hidden rounded-md border border-light-200 bg-light-50 text-sm text-neutral-900 dark:border-dark-200 dark:bg-dark-200 dark:text-dark-1000 dark:hover:bg-dark-300",
+        priorityHeaderClass ? "p-0" : "px-3 py-2",
       )}
-      <span className="break-words">{title}</span>
-      {labels.length ||
-      members.length ||
-      checklists.length > 0 ||
-      hasDescription ||
-      comments.length > 0 ||
-      hasDueDate ||
-      hasAttachments ? (
-        <div className="mt-2 flex flex-col justify-end">
-          <div className="space-x-0.5">
-            {labels.map((label) => (
-              <Badge
-                value={label.name}
-                iconLeft={<LabelIcon colourCode={label.colourCode} />}
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-1">
-            <div className="flex items-center gap-2">
-              {hasDescription && (
-                <div className="flex items-center gap-1 text-light-700 dark:text-dark-800">
-                  <HiBars3BottomLeft className="h-4 w-4" />
-                </div>
-              )}
-              {hasDueDate && dueDate && (
-                <div
-                  className={twMerge(
-                    "flex items-center gap-1",
-                    isOverdue
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-light-800 dark:text-dark-800",
-                  )}
-                >
-                  <HiOutlineClock className="h-4 w-4" />
-                  <span className="text-[11px]">
-                    {format(dueDate, showYear ? "do MMM yyyy" : "do MMM", {
-                      locale: dateLocale,
-                    })}
-                  </span>
-                </div>
-              )}
-              {comments.length > 0 && (
-                <div className="flex items-center gap-1 text-light-700 dark:text-dark-800">
-                  <HiChatBubbleLeft className="h-4 w-4" />
-                </div>
-              )}
-              {hasAttachments && (
-                <div className="flex items-center gap-1 text-light-700 dark:text-dark-800">
-                  <HiOutlinePaperClip className="h-4 w-4" />
-                </div>
-              )}
+    >
+      {priorityHeaderClass && (
+        <div aria-hidden="true" className={`h-12 ${priorityHeaderClass}`} />
+      )}
+      <div className={priorityHeaderClass ? "px-3 py-2" : undefined}>
+        {ticketNumber && (
+          <span className="mb-1 text-xs text-light-700 dark:text-dark-800">
+            {ticketNumber}
+          </span>
+        )}
+        <span className="break-words">{title}</span>
+        {labels.length ||
+        members.length ||
+        checklists.length > 0 ||
+        hasDescription ||
+        comments.length > 0 ||
+        hasDueDate ||
+        hasAttachments ? (
+          <div className="mt-2 flex flex-col justify-end">
+            <div className="space-x-0.5">
+              {labels.map((label) => (
+                <Badge
+                  value={label.name}
+                  iconLeft={<LabelIcon colourCode={label.colourCode} />}
+                />
+              ))}
             </div>
-            <div className="flex items-center justify-end gap-1">
-              {checklists.length > 0 && (
-                <div className="flex items-center gap-1 rounded-full border-[1px] border-light-300 px-2 py-1 dark:border-dark-600">
-                  <CircularProgress
-                    progress={progress || 2}
-                    size="sm"
-                    className="flex-shrink-0"
-                  />
-                  <span className="text-[10px] text-light-900 dark:text-dark-950">
-                    {completedItems}/{totalItems}
-                  </span>
-                </div>
-              )}
-              {members.length > 0 && (
-                <div className="isolate flex justify-end -space-x-1 overflow-hidden">
-                  {members.map(({ user, email }) => {
-                    const avatarUrl = user?.image
-                      ? getAvatarUrl(user.image)
-                      : undefined;
+            <div className="mt-2 flex items-center justify-between gap-1">
+              <div className="flex items-center gap-2">
+                {hasDescription && (
+                  <div className="flex items-center gap-1 text-light-700 dark:text-dark-800">
+                    <HiBars3BottomLeft className="h-4 w-4" />
+                  </div>
+                )}
+                {hasDueDate && dueDate && (
+                  <div
+                    className={twMerge(
+                      "flex items-center gap-1",
+                      isOverdue
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-light-800 dark:text-dark-800",
+                    )}
+                  >
+                    <HiOutlineClock className="h-4 w-4" />
+                    <span className="text-[11px]">
+                      {format(dueDate, showYear ? "do MMM yyyy" : "do MMM", {
+                        locale: dateLocale,
+                      })}
+                    </span>
+                  </div>
+                )}
+                {comments.length > 0 && (
+                  <div className="flex items-center gap-1 text-light-700 dark:text-dark-800">
+                    <HiChatBubbleLeft className="h-4 w-4" />
+                  </div>
+                )}
+                {hasAttachments && (
+                  <div className="flex items-center gap-1 text-light-700 dark:text-dark-800">
+                    <HiOutlinePaperClip className="h-4 w-4" />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-end gap-1">
+                {checklists.length > 0 && (
+                  <div className="flex items-center gap-1 rounded-full border-[1px] border-light-300 px-2 py-1 dark:border-dark-600">
+                    <CircularProgress
+                      progress={progress || 2}
+                      size="sm"
+                      className="flex-shrink-0"
+                    />
+                    <span className="text-[10px] text-light-900 dark:text-dark-950">
+                      {completedItems}/{totalItems}
+                    </span>
+                  </div>
+                )}
+                {members.length > 0 && (
+                  <div className="isolate flex justify-end -space-x-1 overflow-hidden">
+                    {members.map(({ user, email }) => {
+                      const avatarUrl = user?.image
+                        ? getAvatarUrl(user.image)
+                        : undefined;
 
-                    return (
-                      <Avatar
-                        name={user?.name ?? ""}
-                        email={user?.email ?? email}
-                        imageUrl={avatarUrl}
-                        size="sm"
-                      />
-                    );
-                  })}
-                </div>
-              )}
+                      return (
+                        <Avatar
+                          name={user?.name ?? ""}
+                          email={user?.email ?? email}
+                          imageUrl={avatarUrl}
+                          size="sm"
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 };
