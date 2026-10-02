@@ -1,0 +1,50 @@
+name: Discord build notification
+
+on:
+  workflow_run:
+    workflows: ["Docker"]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL is not configured"
+            exit 1
+          fi
+
+          if [ "$CONCLUSION" = "success" ]; then
+            EMOJI="✅"
+          else
+            EMOJI="❌"
+          fi
+
+          payload="$(jq -n \
+            --arg emoji "$EMOJI" \
+            --arg repo "$REPOSITORY" \
+            --arg workflow "$WORKFLOW_NAME" \
+            --arg result "$CONCLUSION" \
+            --arg branch "$BRANCH" \
+            --arg url "$RUN_URL" \
+            '{content: "\($emoji) \($repo): \($workflow) completed with status **\($result)** on `\($branch)`.\n\($url)"}')"
+
+          curl --fail-with-body --silent --show-error \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            "$DISCORD_WEBHOOK_URL"
