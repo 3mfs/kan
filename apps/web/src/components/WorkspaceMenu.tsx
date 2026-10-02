@@ -115,6 +115,7 @@ export default function WorkspaceMenu({
 
         <Transition
           as={Fragment}
+          show={!isCollapsed ? true : undefined}
           enter="transition ease-out duration-100"
           enterFrom="transform opacity-0 scale-95"
           enterTo="transform opacity-100 scale-100"
@@ -123,12 +124,16 @@ export default function WorkspaceMenu({
           leaveTo="transform opacity-0 scale-95"
         >
           <Menu.Items
+            static={!isCollapsed}
             className={twMerge(
-              "absolute left-0 z-10 origin-top-left rounded-md border border-light-600 bg-light-50 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:border-dark-600 dark:bg-dark-300",
+              "z-10 rounded-md focus:outline-none",
+              isCollapsed
+                ? "absolute left-0 origin-top-left border border-light-600 bg-light-50 shadow-lg ring-1 ring-black ring-opacity-5 dark:border-dark-600 dark:bg-dark-300"
+                : "relative mt-1 border-l border-light-300 bg-transparent dark:border-dark-400",
               isCollapsed ? "w-48" : "w-full",
             )}
           >
-            <div className="p-1">
+            <div className={twMerge("p-1", !isCollapsed && "ml-3")}>
               {availableWorkspaces.map((availableWorkspace) => (
                 <div key={availableWorkspace.publicId} className="flex">
                   <Menu.Item>
