@@ -83,7 +83,9 @@ const Card = ({
       {priorityHeaderClass && (
         <div aria-hidden="true" className={`h-12 ${priorityHeaderClass}`} />
       )}
-      <div className={priorityHeaderClass ? "px-3 py-2" : undefined}>
+      <div
+        className={twMerge("flex flex-col", priorityHeaderClass && "px-3 py-2")}
+      >
         {ticketNumber && (
           <span className="mb-1 text-xs text-light-700 dark:text-dark-800">
             {ticketNumber}

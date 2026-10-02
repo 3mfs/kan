@@ -5,7 +5,7 @@ import baseConfig from "@kan/tailwind-config/web";
 
 export default {
   darkMode: "class",
-  content: [...baseConfig.content],
+  content: [...baseConfig.content, "./src/**/*.ts"],
   plugins: [require("@tailwindcss/typography")],
   presets: [baseConfig],
   theme: {
