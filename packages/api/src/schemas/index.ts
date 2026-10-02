@@ -25,6 +25,7 @@ export {
 
 export {
   workspaceListItemSchema,
+  workspaceCardPrefixSchema,
   workspaceDetailSchema,
   workspaceWithBoardsSchema,
   workspaceCreateResponseSchema,

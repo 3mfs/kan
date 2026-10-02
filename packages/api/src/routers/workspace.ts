@@ -9,6 +9,7 @@ import * as workspaceSlugRepo from "@kan/db/repository/workspaceSlug.repo";
 import { generateUID } from "@kan/shared/utils";
 
 import {
+  workspaceCardPrefixSchema,
   workspaceCreateResponseSchema,
   workspaceDeleteResponseSchema,
   workspaceDetailSchema,
@@ -293,6 +294,9 @@ export const workspaceRouter = createTRPCRouter({
           .regex(/^(?![-]+$)[a-zA-Z0-9-]+$/)
           .optional()
           .or(z.literal("")),
+        cardPrefix: z
+          .union([workspaceCardPrefixSchema, z.literal("")])
+          .optional(),
       }),
     )
     .output(workspaceCreateResponseSchema)
@@ -348,6 +352,7 @@ export const workspaceRouter = createTRPCRouter({
         createdBy: userId,
         createdByEmail: userEmail,
         ...(input.description && { description: input.description }),
+        ...(input.cardPrefix && { cardPrefix: input.cardPrefix }),
       });
 
       if (!result.publicId)
@@ -426,6 +431,7 @@ export const workspaceRouter = createTRPCRouter({
         weekStartDay: z
           .union([z.literal(0), z.literal(1), z.literal(6)])
           .optional(),
+        cardPrefix: workspaceCardPrefixSchema.optional(),
       }),
     )
     .output(workspaceUpdateResponseSchema)
@@ -492,6 +498,7 @@ export const workspaceRouter = createTRPCRouter({
           description: input.description,
           showEmailsToMembers: input.showEmailsToMembers,
           weekStartDay: input.weekStartDay,
+          cardPrefix: input.cardPrefix,
         },
       );
 

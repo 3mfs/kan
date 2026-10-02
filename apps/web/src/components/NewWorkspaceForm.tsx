@@ -32,6 +32,15 @@ const schema = z.object({
     })
     .optional()
     .or(z.literal("")),
+  cardPrefix: z
+    .string()
+    .trim()
+    .max(10, { message: t`Ticket ID prefix cannot exceed 10 characters` })
+    .regex(/^[a-zA-Z0-9]*$/, {
+      message: t`Ticket ID prefix can only contain letters and numbers`,
+    })
+    .optional()
+    .or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -52,6 +61,7 @@ export function NewWorkspaceForm() {
     defaultValues: {
       name: "",
       slug: "",
+      cardPrefix: "",
     },
     mode: "onSubmit",
   });
@@ -130,6 +140,7 @@ export function NewWorkspaceForm() {
     createWorkspace.mutate({
       name: values.name,
       slug: values.slug,
+      cardPrefix: values.cardPrefix === "" ? undefined : values.cardPrefix,
     });
   };
 
@@ -172,6 +183,19 @@ export function NewWorkspaceForm() {
             }
           }}
         />
+
+        <div className="mt-4">
+          <Input
+            id="workspace-card-prefix"
+            placeholder={t`Ticket ID prefix (optional)`}
+            {...register("cardPrefix")}
+            className="uppercase"
+            errorMessage={errors.cardPrefix?.message}
+          />
+          <p className="mt-1 text-xs text-light-800 dark:text-dark-800">
+            {t`Ticket IDs will look like PREFIX-123. Leave blank to generate a prefix from the workspace name.`}
+          </p>
+        </div>
 
         <div className="mt-4">
           <Input

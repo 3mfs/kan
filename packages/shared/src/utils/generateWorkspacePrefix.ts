@@ -24,3 +24,6 @@ export const generateWorkspacePrefix = (name: string): string => {
 
   return initials || "WS";
 };
+
+export const normalizeWorkspacePrefix = (prefix: string): string =>
+  prefix.trim().toUpperCase();

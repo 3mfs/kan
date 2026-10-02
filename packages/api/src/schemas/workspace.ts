@@ -2,6 +2,14 @@ import { z } from "zod";
 
 import { userSchema } from "./common";
 
+export const workspaceCardPrefixSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(10)
+  .regex(/^[a-zA-Z0-9]+$/)
+  .transform((value) => value.toUpperCase());
+
 // ─── workspace.all ───────────────────────────────────────────
 export const workspaceListItemSchema = z.object({
   role: z.string(),
@@ -48,6 +56,7 @@ export const workspaceDetailSchema = z.object({
   publicId: z.string(),
   name: z.string(),
   slug: z.string(),
+  cardPrefix: z.string(),
   showEmailsToMembers: z.boolean().nullable(),
   weekStartDay: z.number().nullable(),
   members: z.array(workspaceMemberDetailSchema),
@@ -88,6 +97,7 @@ export const workspaceUpdateResponseSchema = z.object({
   plan: z.enum(["free", "team", "pro", "enterprise"]),
   showEmailsToMembers: z.boolean().nullable(),
   weekStartDay: z.number().nullable(),
+  cardPrefix: z.string(),
 });
 
 // ─── workspace.delete ────────────────────────────────────────

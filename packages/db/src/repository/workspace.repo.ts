@@ -25,6 +25,7 @@ import {
   generateUID,
   generateWorkspacePrefix,
   getDefaultPermissions,
+  normalizeWorkspacePrefix,
 } from "@kan/shared";
 
 import * as permissionRepo from "./permission.repo";
@@ -71,6 +72,7 @@ export const create = async (
     createdByEmail: string;
     description?: string;
     plan?: "free" | "team" | "pro" | "enterprise";
+    cardPrefix?: string;
   },
 ) => {
   const [workspace] = await db
@@ -84,7 +86,9 @@ export const create = async (
         description: workspaceInput.description,
       }),
       ...(workspaceInput.plan && { plan: workspaceInput.plan }),
-      cardPrefix: generateWorkspacePrefix(workspaceInput.name),
+      cardPrefix: workspaceInput.cardPrefix
+        ? normalizeWorkspacePrefix(workspaceInput.cardPrefix)
+        : generateWorkspacePrefix(workspaceInput.name),
       cardCounter: 0,
     })
     .returning({
@@ -142,6 +146,7 @@ export const update = async (
     description?: string;
     showEmailsToMembers?: boolean;
     weekStartDay?: number;
+    cardPrefix?: string;
   },
 ) => {
   const [result] = await db
@@ -153,6 +158,9 @@ export const update = async (
       description: workspaceInput.description,
       showEmailsToMembers: workspaceInput.showEmailsToMembers,
       weekStartDay: workspaceInput.weekStartDay,
+      cardPrefix: workspaceInput.cardPrefix
+        ? normalizeWorkspacePrefix(workspaceInput.cardPrefix)
+        : undefined,
     })
     .where(eq(workspaces.publicId, workspacePublicId))
     .returning({
@@ -164,6 +172,7 @@ export const update = async (
       plan: workspaces.plan,
       showEmailsToMembers: workspaces.showEmailsToMembers,
       weekStartDay: workspaces.weekStartDay,
+      cardPrefix: workspaces.cardPrefix,
     });
 
   return result;
@@ -207,6 +216,7 @@ export const getByPublicIdWithMembers = (
       publicId: true,
       name: true,
       slug: true,
+      cardPrefix: true,
       showEmailsToMembers: true,
       weekStartDay: true,
     },
@@ -385,7 +395,9 @@ export const isWorkspaceSlugAvailable = async (
         // so no other workspace may claim it as a custom slug either.
         and(
           eq(workspaces.publicId, workspaceSlug),
-          excludeWorkspaceId ? ne(workspaces.id, excludeWorkspaceId) : undefined,
+          excludeWorkspaceId
+            ? ne(workspaces.id, excludeWorkspaceId)
+            : undefined,
         ),
       ),
     ),

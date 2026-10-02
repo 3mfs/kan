@@ -59,6 +59,9 @@ WORKDIR /app
 
 COPY --from=deps /app/ ./
 COPY --from=pruner /app/out/full/ .
+# next.config.js dynamically loads this file, so keep it explicit in the image
+# even if the monorepo prune step does not detect the dynamic import.
+COPY apps/web/src/env.ts ./apps/web/src/env.ts
 
 # Force standalone output for production Docker image
 ENV NEXT_PUBLIC_USE_STANDALONE_OUTPUT=true
