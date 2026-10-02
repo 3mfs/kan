@@ -23,10 +23,12 @@ type FormValues = z.infer<typeof schema>;
 
 const UpdateWorkspaceCardPrefixForm = ({
   workspacePublicId,
+  workspaceName,
   workspaceCardPrefix,
   disabled = false,
 }: {
   workspacePublicId: string;
+  workspaceName: string;
   workspaceCardPrefix: string;
   disabled?: boolean;
 }) => {
@@ -98,7 +100,7 @@ const UpdateWorkspaceCardPrefixForm = ({
         )}
       </div>
       <p className="mb-4 text-xs text-light-800 dark:text-dark-800">
-        {t`Ticket IDs will look like PREFIX-123. Changing this prefix updates existing ticket IDs.`}
+        {t`Ticket IDs will look like PREFIX-123. Changing this prefix updates existing ticket IDs for the ${workspaceName} workspace.`}
       </p>
     </div>
   );

@@ -45,6 +45,7 @@ export default function WorkspaceSettings() {
         </h2>
         <UpdateWorkspaceCardPrefixForm
           workspacePublicId={workspace.publicId}
+          workspaceName={workspace.name}
           workspaceCardPrefix={workspace.cardPrefix}
           disabled={!canEditWorkspace}
         />
