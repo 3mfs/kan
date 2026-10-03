@@ -62,6 +62,7 @@ export function PrioritySelector({
       }
       isLoading={isLoading || updatePriority.isPending}
       disabled={disabled}
+      variant="detail"
     />
   );
 }

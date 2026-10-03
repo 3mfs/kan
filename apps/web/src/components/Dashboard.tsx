@@ -244,6 +244,15 @@ export default function Dashboard({
 
           <div className="relative h-full min-h-0 w-full overflow-hidden md:rounded-lg md:border md:border-light-300 md:bg-light-50 md:dark:border-dark-300 md:dark:bg-dark-50">
             <div className="relative flex h-full min-h-0 w-full overflow-hidden">
+              {(isSideNavOpen || isRightPanelOpen) && (
+                <button
+                  type="button"
+                  aria-label={t`Close sidebar`}
+                  className="fixed inset-x-0 bottom-0 top-12 z-30 border-0 bg-transparent p-0 md:hidden"
+                  onPointerDown={closeSidebars}
+                />
+              )}
+
               <div
                 className="h-full w-full overflow-y-auto"
                 onPointerDown={() => {
