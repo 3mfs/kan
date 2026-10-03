@@ -1,6 +1,4 @@
-import { useCallback } from "react";
 import type { ReactNode } from "react";
-import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { t } from "@lingui/core/macro";
@@ -14,8 +12,7 @@ import {
 
 import { authClient } from "@kan/auth/client";
 
-import { getListHeaderId } from "../dnd/ids";
-import type { ListDragData, ListHeaderDragData } from "../dnd/types";
+import type { ListDragData } from "../dnd/types";
 import Dropdown from "~/components/Dropdown";
 import { Tooltip } from "~/components/Tooltip";
 import { usePermissions } from "~/hooks/usePermissions";
@@ -90,23 +87,14 @@ export default function List({
   const {
     attributes,
     listeners,
-    setNodeRef: setSortableNodeRef,
+    setNodeRef,
     transform,
     transition,
     isDragging,
   } = useSortable({
     id: list.publicId,
     data: { type: "LIST" } satisfies ListDragData,
-    disabled: { draggable: !canDrag, droppable: false },
-  });
-
-  const { setNodeRef: setColumnDropRef } = useDroppable({
-    id: getListHeaderId(list.publicId),
-    data: {
-      type: "LIST_HEADER",
-      listPublicId: list.publicId,
-    } satisfies ListHeaderDragData,
-    disabled: isOptimistic,
+    disabled: { draggable: !canDrag, droppable: isOptimistic },
   });
 
   const style = {
@@ -114,18 +102,10 @@ export default function List({
     transition,
   };
 
-  const setListNodeRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      setSortableNodeRef(node);
-      setColumnDropRef(node);
-    },
-    [setColumnDropRef, setSortableNodeRef],
-  );
-
   return (
     <div
       data-board-draggable
-      ref={setListNodeRef}
+      ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}

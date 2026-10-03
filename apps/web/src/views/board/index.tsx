@@ -78,14 +78,89 @@ import { NewTemplateForm } from "./components/NewTemplateForm";
 import { UpdateBoardSlugForm } from "./components/UpdateBoardSlugForm";
 import ViewToggle from "./components/ViewToggle";
 import VisibilityButton from "./components/VisibilityButton";
+import { getCardInsertionIndex } from "./dnd/card-position";
 import { createBoardCollisionDetection } from "./dnd/collision";
 
 type PublicListId = string;
+type CardsByList = Record<string, BoardCard[]>;
+type DragActive = DragOverEvent["active"];
+type DragOver = NonNullable<DragOverEvent["over"]>;
 
 function getEventData(
   entity: { data: { current: unknown } } | null | undefined,
 ): DragData | undefined {
   return entity?.data.current as DragData | undefined;
+}
+
+function getDestinationListPublicId(over: DragOver): string | undefined {
+  const overData = getEventData(over);
+
+  if (overData?.type === "CARD" || overData?.type === "LIST_BODY") {
+    return overData.listPublicId;
+  }
+
+  if (overData?.type === "LIST") {
+    return String(over.id);
+  }
+
+  return undefined;
+}
+
+function moveCardForDrop(
+  cardsByList: CardsByList,
+  active: DragActive,
+  over: DragOver,
+  pointerY: number | null,
+): { cardsByList: CardsByList; listPublicId: string; index: number } | null {
+  const activeId = String(active.id);
+  const listPublicId = getDestinationListPublicId(over);
+  if (!listPublicId) return null;
+
+  const sourceListPublicId = Object.keys(cardsByList).find((listId) =>
+    cardsByList[listId]?.some((card) => card.publicId === activeId),
+  );
+  if (!sourceListPublicId) return null;
+
+  const sourceCards = cardsByList[sourceListPublicId] ?? [];
+  const movedCard = sourceCards.find((card) => card.publicId === activeId);
+  if (!movedCard) return null;
+
+  const sourceCardsWithoutActive = sourceCards.filter(
+    (card) => card.publicId !== activeId,
+  );
+  const destinationCards = (
+    sourceListPublicId === listPublicId
+      ? sourceCardsWithoutActive
+      : (cardsByList[listPublicId] ?? [])
+  ).filter((card) => card.publicId !== activeId);
+
+  const overData = getEventData(over);
+  const translatedRect = active.rect.current.translated;
+  const dropY =
+    pointerY ??
+    (translatedRect
+      ? translatedRect.top + translatedRect.height / 2
+      : over.rect.top);
+  const index = getCardInsertionIndex(
+    destinationCards,
+    overData?.type === "CARD" ? String(over.id) : null,
+    dropY,
+    over.rect,
+  );
+
+  return {
+    cardsByList: {
+      ...cardsByList,
+      [sourceListPublicId]: sourceCardsWithoutActive,
+      [listPublicId]: [
+        ...destinationCards.slice(0, index),
+        movedCard,
+        ...destinationCards.slice(index),
+      ],
+    },
+    listPublicId,
+    index,
+  };
 }
 
 export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
@@ -472,6 +547,7 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
     BoardCard[]
   > | null>(null);
   const [dragListOrder, setDragListOrder] = useState<BoardList[] | null>(null);
+  const dragCardsByListRef = useRef<CardsByList | null>(null);
   const lastOverIdRef = useRef<UniqueIdentifier | null>(null);
   const pointerYRef = useRef<number | null>(null);
 
@@ -527,6 +603,7 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
     setActiveId(active.id);
     setActiveWidth(active.rect.current.initial?.width ?? null);
     if (getEventData(active)?.type === "CARD") {
+      dragCardsByListRef.current = baseCardsByList;
       setDragCardsByList(baseCardsByList);
     }
   };
@@ -537,68 +614,16 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
     const activeData = getEventData(active);
     if (activeData?.type !== "CARD") return;
 
-    const overData = getEventData(over);
-    const destListPublicId =
-      overData?.type === "CARD" ||
-      overData?.type === "LIST_BODY" ||
-      overData?.type === "LIST_HEADER"
-        ? overData.listPublicId
-        : undefined;
-    if (!destListPublicId) return;
+    const result = moveCardForDrop(
+      dragCardsByListRef.current ?? baseCardsByList,
+      active,
+      over,
+      pointerYRef.current,
+    );
+    if (!result) return;
 
-    setDragCardsByList((current) => {
-      const lists = current ?? baseCardsByList;
-      const sourceListPublicId = Object.keys(lists).find((listId) =>
-        lists[listId]?.some((card) => card.publicId === active.id),
-      );
-
-      if (!sourceListPublicId || sourceListPublicId === destListPublicId) {
-        return current;
-      }
-
-      const sourceCards = lists[sourceListPublicId] ?? [];
-      const activeIndex = sourceCards.findIndex(
-        (card) => card.publicId === active.id,
-      );
-      const movedCard = sourceCards[activeIndex];
-      if (!movedCard) return current;
-
-      const destCards = lists[destListPublicId] ?? [];
-      const overIndex =
-        overData?.type === "CARD"
-          ? destCards.findIndex((card) => card.publicId === over.id)
-          : -1;
-
-      let insertAt: number;
-      if (overIndex === -1) {
-        insertAt = destCards.length;
-      } else {
-        const overRect = over.rect;
-        const isBelowOverItem =
-          pointerYRef.current !== null
-            ? pointerYRef.current > overRect.top + overRect.height / 2
-            : Boolean(
-                active.rect.current.translated &&
-                  active.rect.current.translated.top +
-                    active.rect.current.translated.height / 2 >
-                    overRect.top + overRect.height / 2,
-              );
-        insertAt = overIndex + (isBelowOverItem ? 1 : 0);
-      }
-
-      return {
-        ...lists,
-        [sourceListPublicId]: [
-          ...sourceCards.slice(0, activeIndex),
-          ...sourceCards.slice(activeIndex + 1),
-        ],
-        [destListPublicId]: [
-          ...destCards.slice(0, insertAt),
-          movedCard,
-          ...destCards.slice(insertAt),
-        ],
-      };
-    });
+    dragCardsByListRef.current = result.cardsByList;
+    setDragCardsByList(result.cardsByList);
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent): void => {
@@ -637,87 +662,39 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
     }
 
     if (activeData?.type === "CARD") {
-      const finalLists = dragCardsByList ?? baseCardsByList;
-
       if (!over || !canEditCard || isPlaceholderPublicId(activeIdStr)) {
+        dragCardsByListRef.current = null;
         setDragCardsByList(null);
         return;
       }
 
-      const overData = getEventData(over);
-      const destListPublicId =
-        overData?.type === "CARD" ||
-        overData?.type === "LIST_BODY" ||
-        overData?.type === "LIST_HEADER"
-          ? overData.listPublicId
-          : undefined;
-      if (!destListPublicId || isPlaceholderPublicId(destListPublicId)) {
-        setDragCardsByList(null);
-        return;
-      }
-
-      const sourceListPublicId = Object.keys(finalLists).find((listId) =>
-        finalLists[listId]?.some((card) => card.publicId === active.id),
+      const result = moveCardForDrop(
+        dragCardsByListRef.current ?? baseCardsByList,
+        active,
+        over,
+        pointerYRef.current,
       );
-      const movedCard = sourceListPublicId
-        ? finalLists[sourceListPublicId]?.find(
-            (card) => card.publicId === active.id,
-          )
-        : undefined;
-
-      if (!sourceListPublicId || !movedCard) {
+      if (!result || isPlaceholderPublicId(result.listPublicId)) {
+        dragCardsByListRef.current = null;
         setDragCardsByList(null);
         return;
       }
 
-      // Remove the active card before calculating the destination index. This
-      // also handles a drop that happens before the last drag-over state has
-      // committed, which is common when dropping into a newly-created empty
-      // list.
-      const listsWithoutActive = Object.fromEntries(
-        Object.entries(finalLists).map(([listId, cards]) => [
-          listId,
-          cards.filter((card) => card.publicId !== active.id),
-        ]),
-      );
-      const destCards = listsWithoutActive[destListPublicId] ?? [];
-      const rawOverIndex =
-        overData?.type === "CARD"
-          ? destCards.findIndex((card) => card.publicId === over.id)
-          : -1;
-      const isBelowOverItem =
-        rawOverIndex !== -1 &&
-        (pointerYRef.current !== null
-          ? pointerYRef.current > over.rect.top + over.rect.height / 2
-          : Boolean(
-              active.rect.current.translated &&
-                active.rect.current.translated.top +
-                  active.rect.current.translated.height / 2 >
-                  over.rect.top + over.rect.height / 2,
-            ));
-      const finalIndex =
-        rawOverIndex === -1
-          ? destCards.length
-          : rawOverIndex + (isBelowOverItem ? 1 : 0);
-
-      const finalPreview = {
-        ...listsWithoutActive,
-        [destListPublicId]: [
-          ...destCards.slice(0, finalIndex),
-          movedCard,
-          ...destCards.slice(finalIndex),
-        ],
-      };
-
-      setDragCardsByList(finalPreview);
+      dragCardsByListRef.current = result.cardsByList;
+      setDragCardsByList(result.cardsByList);
 
       updateCardMutation.mutate(
         {
           cardPublicId: activeIdStr,
-          listPublicId: destListPublicId,
-          index: finalIndex,
+          listPublicId: result.listPublicId,
+          index: result.index,
         },
-        { onSettled: () => setDragCardsByList(null) },
+        {
+          onSettled: () => {
+            dragCardsByListRef.current = null;
+            setDragCardsByList(null);
+          },
+        },
       );
     }
   };
