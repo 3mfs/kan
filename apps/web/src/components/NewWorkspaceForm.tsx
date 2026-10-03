@@ -103,6 +103,7 @@ export function NewWorkspaceForm() {
         switchWorkspace({
           publicId: values.publicId,
           name: values.name,
+          image: values.image,
           description: values.description,
           slug: values.slug,
           plan: values.plan,

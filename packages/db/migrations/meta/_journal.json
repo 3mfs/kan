@@ -260,6 +260,13 @@
       "when": 1790966669000,
       "tag": "20261002150000_AddCardPriority",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1790976600000,
+      "tag": "20261002193000_AddWorkspaceImage",
+      "breakpoints": true
     }
   ]
 }

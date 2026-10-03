@@ -95,6 +95,7 @@ export const create = async (
       id: workspaces.id,
       publicId: workspaces.publicId,
       name: workspaces.name,
+      image: workspaces.image,
       slug: workspaces.slug,
       description: workspaces.description,
       plan: workspaces.plan,
@@ -144,6 +145,7 @@ export const update = async (
     slug?: string;
     plan?: "free" | "team" | "pro" | "enterprise";
     description?: string;
+    image?: string | null;
     showEmailsToMembers?: boolean;
     weekStartDay?: number;
     cardPrefix?: string;
@@ -156,6 +158,7 @@ export const update = async (
       slug: workspaceInput.slug,
       plan: workspaceInput.plan,
       description: workspaceInput.description,
+      image: workspaceInput.image,
       showEmailsToMembers: workspaceInput.showEmailsToMembers,
       weekStartDay: workspaceInput.weekStartDay,
       cardPrefix: workspaceInput.cardPrefix
@@ -167,6 +170,7 @@ export const update = async (
       id: workspaces.id,
       publicId: workspaces.publicId,
       name: workspaces.name,
+      image: workspaces.image,
       slug: workspaces.slug,
       description: workspaces.description,
       plan: workspaces.plan,
@@ -184,6 +188,7 @@ export const getByPublicId = (db: dbClient, workspacePublicId: string) => {
       id: true,
       publicId: true,
       name: true,
+      image: true,
       plan: true,
       slug: true,
       deletedAt: true,
@@ -215,6 +220,7 @@ export const getByPublicIdWithMembers = (
       id: true,
       publicId: true,
       name: true,
+      image: true,
       slug: true,
       cardPrefix: true,
       showEmailsToMembers: true,
@@ -306,6 +312,7 @@ export const getAllByUserId = async (db: dbClient, userId: string) => {
         columns: {
           publicId: true,
           name: true,
+          image: true,
           description: true,
           slug: true,
           plan: true,

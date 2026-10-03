@@ -16,6 +16,7 @@ import UpdateWorkspaceDescriptionForm from "./components/UpdateWorkspaceDescript
 import UpdateWorkspaceEmailVisibilityForm from "./components/UpdateWorkspaceEmailVisibilityForm";
 import UpdateWorkspaceNameForm from "./components/UpdateWorkspaceNameForm";
 import UpdateWorkspaceUrlForm from "./components/UpdateWorkspaceUrlForm";
+import WorkspaceImageForm from "./components/WorkspaceImageForm";
 
 export default function WorkspaceSettings() {
   const { modalContentType, openModal, isOpen } = useModal();
@@ -37,6 +38,16 @@ export default function WorkspaceSettings() {
         <UpdateWorkspaceNameForm
           workspacePublicId={workspace.publicId}
           workspaceName={workspace.name}
+          disabled={!canEditWorkspace}
+        />
+
+        <h2 className="mb-4 mt-8 text-[14px] font-bold text-neutral-900 dark:text-dark-1000">
+          {t`Workspace image`}
+        </h2>
+        <WorkspaceImageForm
+          workspacePublicId={workspace.publicId}
+          workspaceName={workspace.name}
+          workspaceImage={workspaceData?.image ?? workspace.image}
           disabled={!canEditWorkspace}
         />
 

@@ -46,7 +46,16 @@ export const workspaceRouter = createTRPCRouter({
 
       const result = await workspaceRepo.getAllByUserId(ctx.db, userId);
 
-      return result;
+      const resolveAvatarUrl = createAvatarUrlResolver();
+      return Promise.all(
+        result.map(async (member) => ({
+          ...member,
+          workspace: {
+            ...member.workspace,
+            image: await resolveAvatarUrl(member.workspace.image),
+          },
+        })),
+      );
     }),
   checkSlugAvailability: publicProcedure
     .meta({
@@ -167,6 +176,7 @@ export const workspaceRouter = createTRPCRouter({
 
       // Generate presigned URLs for member avatars
       const resolveAvatarUrl = createAvatarUrlResolver();
+      const workspaceImage = await resolveAvatarUrl(result.image);
       const membersWithAvatarUrls = await Promise.all(
         result.members.map(async (member) => {
           if (!member.user?.image) {
@@ -214,12 +224,14 @@ export const workspaceRouter = createTRPCRouter({
 
         return {
           ...result,
+          image: workspaceImage,
           members: sanitizedMembers,
         };
       }
 
       return {
         ...result,
+        image: workspaceImage,
         members: membersWithAvatarUrls,
       };
     }),
@@ -399,6 +411,7 @@ export const workspaceRouter = createTRPCRouter({
       return {
         publicId: result.publicId,
         name: result.name!,
+        image: result.image ?? null,
         slug: result.slug!,
         description: result.description ?? null,
         plan: (unlinkedSlot?.plan ?? result.plan!) as WorkspacePlan,

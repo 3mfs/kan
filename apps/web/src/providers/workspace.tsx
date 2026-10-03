@@ -14,6 +14,7 @@ interface WorkspaceContextProps {
 
 interface Workspace {
   name: string;
+  image: string | null | undefined;
   description: string | null | undefined;
   publicId: string;
   slug: string | undefined;
@@ -25,6 +26,7 @@ interface Workspace {
 
 const initialWorkspace: Workspace = {
   name: "",
+  image: null,
   description: null,
   publicId: "",
   slug: "",
@@ -91,6 +93,7 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({
         role,
         publicId: workspace.publicId,
         name: workspace.name,
+        image: workspace.image,
         slug: workspace.slug,
         description: workspace.description,
         plan: workspace.plan,
@@ -127,6 +130,7 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({
         setWorkspace({
           publicId: selectedWorkspace.workspace.publicId,
           name: selectedWorkspace.workspace.name,
+          image: selectedWorkspace.workspace.image,
           slug: selectedWorkspace.workspace.slug,
           plan: selectedWorkspace.workspace.plan,
           description: selectedWorkspace.workspace.description,
@@ -153,6 +157,7 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({
     setWorkspace({
       publicId: primaryWorkspace.publicId,
       name: primaryWorkspace.name,
+      image: primaryWorkspace.image,
       slug: primaryWorkspace.slug,
       plan: primaryWorkspace.plan,
       description: primaryWorkspace.description,

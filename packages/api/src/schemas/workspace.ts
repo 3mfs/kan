@@ -16,6 +16,7 @@ export const workspaceListItemSchema = z.object({
   workspace: z.object({
     publicId: z.string(),
     name: z.string(),
+    image: z.string().nullable(),
     description: z.string().nullable(),
     slug: z.string(),
     plan: z.enum(["free", "team", "pro", "enterprise"]),
@@ -55,6 +56,7 @@ const workspaceSubscriptionSchema = z.object({
 export const workspaceDetailSchema = z.object({
   publicId: z.string(),
   name: z.string(),
+  image: z.string().nullable(),
   slug: z.string(),
   cardPrefix: z.string(),
   showEmailsToMembers: z.boolean().nullable(),
@@ -82,6 +84,7 @@ export const workspaceWithBoardsSchema = z.object({
 export const workspaceCreateResponseSchema = z.object({
   publicId: z.string(),
   name: z.string(),
+  image: z.string().nullable(),
   slug: z.string(),
   description: z.string().nullable(),
   plan: z.enum(["free", "team", "pro", "enterprise"]),
@@ -92,6 +95,7 @@ export const workspaceCreateResponseSchema = z.object({
 export const workspaceUpdateResponseSchema = z.object({
   publicId: z.string(),
   name: z.string(),
+  image: z.string().nullable(),
   slug: z.string(),
   description: z.string().nullable(),
   plan: z.enum(["free", "team", "pro", "enterprise"]),
