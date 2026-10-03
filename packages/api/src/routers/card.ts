@@ -866,7 +866,7 @@ export const cardRouter = createTRPCRouter({
         cardPublicId: z.string().min(12),
         title: z.string().min(1).max(2000).optional(),
         description: z.string().optional(),
-        index: z.number().optional(),
+        index: z.number().int().min(0).optional(),
         listPublicId: z.string().min(12).optional(),
         dueDate: z.date().nullable().optional(),
         priority: z.enum(cardPriorities).nullable().optional(),

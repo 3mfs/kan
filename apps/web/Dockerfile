@@ -112,9 +112,11 @@ CMD ["npx", "drizzle-kit", "migrate"]
 FROM ${DISTROLESS_NODE_IMAGE} AS web
 WORKDIR /app
 
+ARG APP_VERSION=""
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV NEXT_PUBLIC_APP_VERSION=$APP_VERSION
 
 # Copy the standalone Next.js server
 COPY --chown=1000:1000 --from=builder /app/apps/web/.next/standalone/ ./

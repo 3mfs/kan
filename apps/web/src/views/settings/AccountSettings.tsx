@@ -19,6 +19,7 @@ export default function AccountSettings() {
   const { modalContentType, openModal, isOpen } = useModal();
   const isCredentialsEnabled =
     env("NEXT_PUBLIC_ALLOW_CREDENTIALS")?.toLowerCase() === "true";
+  const appVersion = env("NEXT_PUBLIC_APP_VERSION");
   const { data } = api.user.getUser.useQuery();
 
   return (
@@ -42,7 +43,9 @@ export default function AccountSettings() {
           <h2 className="mb-4 mt-8 text-[14px] font-bold text-neutral-900 dark:text-dark-1000">
             {t`Email`}
           </h2>
-          <p className="text-sm text-neutral-700 dark:text-dark-900">{data?.email}</p>
+          <p className="text-sm text-neutral-700 dark:text-dark-900">
+            {data?.email}
+          </p>
         </div>
 
         <div className="mb-8 border-t border-light-300 dark:border-dark-300">
@@ -63,6 +66,15 @@ export default function AccountSettings() {
             {t`Change the application font size.`}
           </p>
           <FontSizeSelector />
+        </div>
+
+        <div className="mb-8 border-t border-light-300 dark:border-dark-300">
+          <h2 className="mb-4 mt-8 text-[14px] font-bold text-neutral-900 dark:text-dark-1000">
+            {t`Application version`}
+          </h2>
+          <p className="text-sm text-neutral-700 dark:text-dark-900">
+            {appVersion || t`Build information is unavailable.`}
+          </p>
         </div>
 
         <div className="mb-8 border-t border-light-300 dark:border-dark-300">
@@ -115,7 +127,9 @@ export default function AccountSettings() {
         modalSize="sm"
         isVisible={isOpen && modalContentType === "CHANGE_PASSWORD"}
       >
-        <ChangePasswordFormConfirmation hasPassword={data?.hasPassword ?? false} />
+        <ChangePasswordFormConfirmation
+          hasPassword={data?.hasPassword ?? false}
+        />
       </Modal>
 
       {/* Global modals */}
