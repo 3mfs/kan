@@ -32,3 +32,26 @@ export function getCardInsertionIndex(
 
   return overIndex + (dropY > overRect.top + overRect.height / 2 ? 1 : 0);
 }
+
+export function getStableCardPreviewIndex(
+  currentIndex: number,
+  candidateIndex: number,
+  pointerY: number | null,
+  lastMovePointerY: number | null,
+  movementThreshold: number,
+): number {
+  if (candidateIndex === currentIndex) return currentIndex;
+
+  const direction = candidateIndex > currentIndex ? 1 : -1;
+  if (pointerY === null || lastMovePointerY === null) {
+    return currentIndex + direction;
+  }
+
+  const pointerMovement = pointerY - lastMovePointerY;
+  const movedFarEnough = Math.abs(pointerMovement) >= movementThreshold;
+  const movedInReorderDirection = Math.sign(pointerMovement) === direction;
+
+  return movedFarEnough && movedInReorderDirection
+    ? currentIndex + direction
+    : currentIndex;
+}

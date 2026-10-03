@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getCardInsertionIndex, getNearestCardId } from "./card-position";
+import {
+  getCardInsertionIndex,
+  getNearestCardId,
+  getStableCardPreviewIndex,
+} from "./card-position";
 
 const cards = [{ publicId: "card-1" }, { publicId: "card-2" }];
 
@@ -53,5 +57,19 @@ describe("card drop positioning", () => {
     expect(getNearestCardId(90, cardRects)).toBe("card-1");
     expect(getNearestCardId(160, cardRects)).toBe("card-1");
     expect(getNearestCardId(230, cardRects)).toBe("card-2");
+  });
+
+  it("moves a live preview only one slot at a time", () => {
+    expect(getStableCardPreviewIndex(0, 2, 150, null, 16)).toBe(1);
+  });
+
+  it("does not cascade while cards reflow under a stationary pointer", () => {
+    expect(getStableCardPreviewIndex(1, 2, 150, 150, 16)).toBe(1);
+    expect(getStableCardPreviewIndex(1, 2, 158, 150, 16)).toBe(1);
+  });
+
+  it("advances after deliberate pointer movement", () => {
+    expect(getStableCardPreviewIndex(1, 2, 166, 150, 16)).toBe(2);
+    expect(getStableCardPreviewIndex(2, 0, 134, 150, 16)).toBe(1);
   });
 });
