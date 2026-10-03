@@ -643,29 +643,53 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
         return;
       }
 
-      const destCards = finalLists[destListPublicId] ?? [];
-      const activeIndex = destCards.findIndex(
-        (card) => card.publicId === active.id,
+      const sourceListPublicId = Object.keys(finalLists).find((listId) =>
+        finalLists[listId]?.some((card) => card.publicId === active.id),
       );
-      if (activeIndex === -1) {
+      const movedCard = sourceListPublicId
+        ? finalLists[sourceListPublicId]?.find(
+            (card) => card.publicId === active.id,
+          )
+        : undefined;
+
+      if (!sourceListPublicId || !movedCard) {
         setDragCardsByList(null);
         return;
       }
+
+      // Remove the active card before calculating the destination index. This
+      // also handles a drop that happens before the last drag-over state has
+      // committed, which is common when dropping into a newly-created empty
+      // list.
+      const listsWithoutActive = Object.fromEntries(
+        Object.entries(finalLists).map(([listId, cards]) => [
+          listId,
+          cards.filter((card) => card.publicId !== active.id),
+        ]),
+      );
+      const destCards = listsWithoutActive[destListPublicId] ?? [];
       const rawOverIndex =
         overData?.type === "CARD"
           ? destCards.findIndex((card) => card.publicId === over.id)
           : -1;
-      const overIndex =
-        rawOverIndex === -1 ? destCards.length - 1 : rawOverIndex;
+      const isBelowOverItem =
+        rawOverIndex !== -1 &&
+        active.rect.current.translated &&
+        active.rect.current.translated.top >
+          over.rect.top + over.rect.height;
+      const finalIndex =
+        rawOverIndex === -1
+          ? destCards.length
+          : rawOverIndex + (isBelowOverItem ? 1 : 0);
 
       const finalPreview = {
-        ...finalLists,
-        [destListPublicId]: arrayMove(destCards, activeIndex, overIndex),
+        ...listsWithoutActive,
+        [destListPublicId]: [
+          ...destCards.slice(0, finalIndex),
+          movedCard,
+          ...destCards.slice(finalIndex),
+        ],
       };
-      const finalIndex =
-        finalPreview[destListPublicId]?.findIndex(
-          (card) => card.publicId === active.id,
-        ) ?? overIndex;
 
       setDragCardsByList(finalPreview);
 
