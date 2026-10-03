@@ -521,6 +521,7 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
   );
 
   const handleDragStart = ({ active }: DragStartEvent): void => {
+    lastOverIdRef.current = null;
     setActiveId(active.id);
     setActiveWidth(active.rect.current.initial?.width ?? null);
     if (getEventData(active)?.type === "CARD") {
@@ -536,7 +537,9 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
 
     const overData = getEventData(over);
     const destListPublicId =
-      overData?.type === "CARD" || overData?.type === "LIST_BODY"
+      overData?.type === "CARD" ||
+      overData?.type === "LIST_BODY" ||
+      overData?.type === "LIST_HEADER"
         ? overData.listPublicId
         : undefined;
     if (!destListPublicId) return;
@@ -571,7 +574,9 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
         const overRect = over.rect;
         const isBelowOverItem =
           active.rect.current.translated &&
-          active.rect.current.translated.top > overRect.top + overRect.height;
+          active.rect.current.translated.top +
+            active.rect.current.translated.height / 2 >
+            overRect.top + overRect.height / 2;
         insertAt = overIndex + (isBelowOverItem ? 1 : 0);
       }
 
@@ -635,7 +640,9 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
 
       const overData = getEventData(over);
       const destListPublicId =
-        overData?.type === "CARD" || overData?.type === "LIST_BODY"
+        overData?.type === "CARD" ||
+        overData?.type === "LIST_BODY" ||
+        overData?.type === "LIST_HEADER"
           ? overData.listPublicId
           : undefined;
       if (!destListPublicId || isPlaceholderPublicId(destListPublicId)) {
@@ -675,8 +682,9 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
       const isBelowOverItem =
         rawOverIndex !== -1 &&
         active.rect.current.translated &&
-        active.rect.current.translated.top >
-          over.rect.top + over.rect.height;
+        active.rect.current.translated.top +
+          active.rect.current.translated.height / 2 >
+          over.rect.top + over.rect.height / 2;
       const finalIndex =
         rawOverIndex === -1
           ? destCards.length

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { t } from "@lingui/core/macro";
@@ -12,7 +13,8 @@ import {
 
 import { authClient } from "@kan/auth/client";
 
-import type { ListDragData } from "../dnd/types";
+import type { ListDragData, ListHeaderDragData } from "../dnd/types";
+import { getListHeaderId } from "../dnd/ids";
 import Dropdown from "~/components/Dropdown";
 import { Tooltip } from "~/components/Tooltip";
 import { usePermissions } from "~/hooks/usePermissions";
@@ -97,6 +99,15 @@ export default function List({
     disabled: { draggable: !canDrag, droppable: false },
   });
 
+  const { setNodeRef: setHeaderDropRef } = useDroppable({
+    id: getListHeaderId(list.publicId),
+    data: {
+      type: "LIST_HEADER",
+      listPublicId: list.publicId,
+    } satisfies ListHeaderDragData,
+    disabled: isOptimistic,
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -113,7 +124,10 @@ export default function List({
         canDrag ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""
       }`}
     >
-      <div className="mb-2 flex justify-between">
+      <div
+        ref={setHeaderDropRef}
+        className="mb-2 flex justify-between"
+      >
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="w-full focus-visible:outline-none"
