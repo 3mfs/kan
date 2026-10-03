@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import type { ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
@@ -13,8 +14,8 @@ import {
 
 import { authClient } from "@kan/auth/client";
 
-import type { ListDragData, ListHeaderDragData } from "../dnd/types";
 import { getListHeaderId } from "../dnd/ids";
+import type { ListDragData, ListHeaderDragData } from "../dnd/types";
 import Dropdown from "~/components/Dropdown";
 import { Tooltip } from "~/components/Tooltip";
 import { usePermissions } from "~/hooks/usePermissions";
@@ -89,7 +90,7 @@ export default function List({
   const {
     attributes,
     listeners,
-    setNodeRef,
+    setNodeRef: setSortableNodeRef,
     transform,
     transition,
     isDragging,
@@ -99,7 +100,7 @@ export default function List({
     disabled: { draggable: !canDrag, droppable: false },
   });
 
-  const { setNodeRef: setHeaderDropRef } = useDroppable({
+  const { setNodeRef: setColumnDropRef } = useDroppable({
     id: getListHeaderId(list.publicId),
     data: {
       type: "LIST_HEADER",
@@ -113,10 +114,18 @@ export default function List({
     transition,
   };
 
+  const setListNodeRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setSortableNodeRef(node);
+      setColumnDropRef(node);
+    },
+    [setColumnDropRef, setSortableNodeRef],
+  );
+
   return (
     <div
       data-board-draggable
-      ref={setNodeRef}
+      ref={setListNodeRef}
       style={style}
       {...attributes}
       {...listeners}
@@ -124,10 +133,7 @@ export default function List({
         canDrag ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""
       }`}
     >
-      <div
-        ref={setHeaderDropRef}
-        className="mb-2 flex justify-between"
-      >
+      <div className="mb-2 flex justify-between">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="w-full focus-visible:outline-none"
