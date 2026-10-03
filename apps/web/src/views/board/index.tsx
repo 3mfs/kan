@@ -78,6 +78,7 @@ import { NewTemplateForm } from "./components/NewTemplateForm";
 import { UpdateBoardSlugForm } from "./components/UpdateBoardSlugForm";
 import ViewToggle from "./components/ViewToggle";
 import VisibilityButton from "./components/VisibilityButton";
+import { moveCardInLists } from "./dnd/card-order";
 import {
   getCardInsertionIndex,
   getStableCardPreviewIndex,
@@ -382,36 +383,15 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
       utils.board.byId.setData(queryParams, (oldBoard) => {
         if (!oldBoard) return oldBoard;
 
-        const updatedLists = Array.from(oldBoard.lists);
+        if (!args.listPublicId || args.index === undefined) return oldBoard;
 
-        const sourceList = updatedLists.find((list) =>
-          list.cards.some((card) => card.publicId === args.cardPublicId),
+        const updatedLists = moveCardInLists(
+          oldBoard.lists,
+          args.cardPublicId,
+          args.listPublicId,
+          args.index,
         );
-        const destinationList = updatedLists.find(
-          (list) => list.publicId === args.listPublicId,
-        );
-
-        const cardToMove = sourceList?.cards.find(
-          (card) => card.publicId === args.cardPublicId,
-        );
-
-        if (!cardToMove) return oldBoard;
-
-        const removedCard = sourceList?.cards.splice(cardToMove.index, 1)[0];
-
-        if (
-          sourceList &&
-          destinationList &&
-          removedCard &&
-          args.index !== undefined
-        ) {
-          destinationList.cards.splice(args.index, 0, removedCard);
-
-          return {
-            ...oldBoard,
-            lists: updatedLists,
-          };
-        }
+        return updatedLists ? { ...oldBoard, lists: updatedLists } : oldBoard;
       });
 
       return { previousState: currentState };
@@ -613,6 +593,8 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
   const handleDragStart = ({ active }: DragStartEvent): void => {
     lastOverIdRef.current = null;
     pointerYRef.current = null;
+    dragCardsByListRef.current = null;
+    dragPreviewPositionRef.current = null;
     setActiveId(active.id);
     setActiveWidth(active.rect.current.initial?.width ?? null);
     if (getEventData(active)?.type === "CARD") {
@@ -735,27 +717,19 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
         return;
       }
 
-      const result = moveCardForDrop(
-        dragCardsByListRef.current ?? baseCardsByList,
-        active,
-        over,
-        pointerYRef.current,
-      );
-      if (!result || isPlaceholderPublicId(result.listPublicId)) {
+      const dropIntent = dragPreviewPositionRef.current;
+      if (!dropIntent || isPlaceholderPublicId(dropIntent.listPublicId)) {
         dragCardsByListRef.current = null;
         dragPreviewPositionRef.current = null;
         setDragCardsByList(null);
         return;
       }
 
-      dragCardsByListRef.current = result.cardsByList;
-      setDragCardsByList(result.cardsByList);
-
       updateCardMutation.mutate(
         {
           cardPublicId: activeIdStr,
-          listPublicId: result.listPublicId,
-          index: result.index,
+          listPublicId: dropIntent.listPublicId,
+          index: dropIntent.index,
         },
         {
           onSettled: () => {
@@ -766,6 +740,14 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
         },
       );
     }
+  };
+
+  const handleDragCancel = (): void => {
+    setActiveId(null);
+    setActiveWidth(null);
+    dragCardsByListRef.current = null;
+    dragPreviewPositionRef.current = null;
+    setDragCardsByList(null);
   };
 
   const activeCard = useMemo(() => {
@@ -1109,6 +1091,7 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
                   >
                     <SortableContext
                       items={listIds}
