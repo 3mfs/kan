@@ -79,15 +79,10 @@ import { UpdateBoardSlugForm } from "./components/UpdateBoardSlugForm";
 import ViewToggle from "./components/ViewToggle";
 import VisibilityButton from "./components/VisibilityButton";
 import { moveCardInLists } from "./dnd/card-order";
-import {
-  getCardInsertionIndex,
-  getStableCardPreviewIndex,
-} from "./dnd/card-position";
 import { createBoardCollisionDetection } from "./dnd/collision";
+import { debugBoardDnd } from "./dnd/debug";
 
 type PublicListId = string;
-type CardsByList = Record<string, BoardCard[]>;
-type DragActive = DragOverEvent["active"];
 type DragOver = NonNullable<DragOverEvent["over"]>;
 
 function getEventData(
@@ -108,68 +103,6 @@ function getDestinationListPublicId(over: DragOver): string | undefined {
   }
 
   return undefined;
-}
-
-function moveCardForDrop(
-  cardsByList: CardsByList,
-  active: DragActive,
-  over: DragOver,
-  pointerY: number | null,
-  requestedIndex?: number,
-): { cardsByList: CardsByList; listPublicId: string; index: number } | null {
-  const activeId = String(active.id);
-  const listPublicId = getDestinationListPublicId(over);
-  if (!listPublicId) return null;
-
-  const sourceListPublicId = Object.keys(cardsByList).find((listId) =>
-    cardsByList[listId]?.some((card) => card.publicId === activeId),
-  );
-  if (!sourceListPublicId) return null;
-
-  const sourceCards = cardsByList[sourceListPublicId] ?? [];
-  const movedCard = sourceCards.find((card) => card.publicId === activeId);
-  if (!movedCard) return null;
-
-  const sourceCardsWithoutActive = sourceCards.filter(
-    (card) => card.publicId !== activeId,
-  );
-  const destinationCards = (
-    sourceListPublicId === listPublicId
-      ? sourceCardsWithoutActive
-      : (cardsByList[listPublicId] ?? [])
-  ).filter((card) => card.publicId !== activeId);
-
-  const overData = getEventData(over);
-  const translatedRect = active.rect.current.translated;
-  const dropY =
-    pointerY ??
-    (translatedRect
-      ? translatedRect.top + translatedRect.height / 2
-      : over.rect.top);
-  const calculatedIndex = getCardInsertionIndex(
-    destinationCards,
-    overData?.type === "CARD" ? String(over.id) : null,
-    dropY,
-    over.rect,
-  );
-  const index = Math.max(
-    0,
-    Math.min(requestedIndex ?? calculatedIndex, destinationCards.length),
-  );
-
-  return {
-    cardsByList: {
-      ...cardsByList,
-      [sourceListPublicId]: sourceCardsWithoutActive,
-      [listPublicId]: [
-        ...destinationCards.slice(0, index),
-        movedCard,
-        ...destinationCards.slice(index),
-      ],
-    },
-    listPublicId,
-    index,
-  };
 }
 
 export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
@@ -535,14 +468,7 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
     BoardCard[]
   > | null>(null);
   const [dragListOrder, setDragListOrder] = useState<BoardList[] | null>(null);
-  const dragCardsByListRef = useRef<CardsByList | null>(null);
-  const dragPreviewPositionRef = useRef<{
-    listPublicId: string;
-    index: number;
-    pointerY: number | null;
-  } | null>(null);
   const lastOverIdRef = useRef<UniqueIdentifier | null>(null);
-  const pointerYRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (activeId == null) return;
@@ -572,7 +498,7 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
   const listIds = useMemo(() => lists.map((list) => list.publicId), [lists]);
 
   const collisionDetectionStrategy: CollisionDetection = useMemo(
-    () => createBoardCollisionDetection(lastOverIdRef, pointerYRef),
+    () => createBoardCollisionDetection(lastOverIdRef),
     [],
   );
 
@@ -592,29 +518,16 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
 
   const handleDragStart = ({ active }: DragStartEvent): void => {
     lastOverIdRef.current = null;
-    pointerYRef.current = null;
-    dragCardsByListRef.current = null;
-    dragPreviewPositionRef.current = null;
     setActiveId(active.id);
     setActiveWidth(active.rect.current.initial?.width ?? null);
     if (getEventData(active)?.type === "CARD") {
-      dragCardsByListRef.current = baseCardsByList;
       const sourceListPublicId = Object.keys(baseCardsByList).find((listId) =>
         baseCardsByList[listId]?.some((card) => card.publicId === active.id),
       );
-      const sourceIndex = sourceListPublicId
-        ? (baseCardsByList[sourceListPublicId] ?? []).findIndex(
-            (card) => card.publicId === active.id,
-          )
-        : -1;
-      dragPreviewPositionRef.current =
-        sourceListPublicId && sourceIndex !== -1
-          ? {
-              listPublicId: sourceListPublicId,
-              index: sourceIndex,
-              pointerY: pointerYRef.current,
-            }
-          : null;
+      debugBoardDnd("start", {
+        cardPublicId: String(active.id),
+        sourceListPublicId,
+      });
       setDragCardsByList(baseCardsByList);
     }
   };
@@ -625,53 +538,64 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
     const activeData = getEventData(active);
     if (activeData?.type !== "CARD") return;
 
-    const currentCardsByList = dragCardsByListRef.current ?? baseCardsByList;
-    const candidate = moveCardForDrop(
-      currentCardsByList,
-      active,
-      over,
-      pointerYRef.current,
-    );
-    if (!candidate) return;
+    const overData = getEventData(over);
+    const destListPublicId = getDestinationListPublicId(over);
+    if (!destListPublicId) return;
 
-    const previousPosition = dragPreviewPositionRef.current;
-    const isSameList =
-      previousPosition?.listPublicId === candidate.listPublicId;
-    const movementThreshold = Math.min(
-      24,
-      Math.max(12, over.rect.height * 0.2),
-    );
-    const previewIndex = isSameList
-      ? getStableCardPreviewIndex(
-          previousPosition.index,
-          candidate.index,
-          pointerYRef.current,
-          previousPosition.pointerY,
-          movementThreshold,
-        )
-      : candidate.index;
+    setDragCardsByList((current) => {
+      const lists = current ?? baseCardsByList;
+      const sourceListPublicId = Object.keys(lists).find((listId) =>
+        lists[listId]?.some((card) => card.publicId === active.id),
+      );
 
-    if (isSameList && previewIndex === previousPosition.index) return;
+      // dnd-kit handles the live sort within one column. Mutating this array
+      // as well causes two independent reflows, which makes cards jump past
+      // their intended drop position.
+      if (!sourceListPublicId || sourceListPublicId === destListPublicId) {
+        return current;
+      }
 
-    const result =
-      previewIndex === candidate.index
-        ? candidate
-        : moveCardForDrop(
-            currentCardsByList,
-            active,
-            over,
-            pointerYRef.current,
-            previewIndex,
-          );
-    if (!result) return;
+      const sourceCards = lists[sourceListPublicId] ?? [];
+      const activeIndex = sourceCards.findIndex(
+        (card) => card.publicId === active.id,
+      );
+      const movedCard = sourceCards[activeIndex];
+      if (!movedCard) return current;
 
-    dragCardsByListRef.current = result.cardsByList;
-    dragPreviewPositionRef.current = {
-      listPublicId: result.listPublicId,
-      index: result.index,
-      pointerY: pointerYRef.current,
-    };
-    setDragCardsByList(result.cardsByList);
+      const destCards = lists[destListPublicId] ?? [];
+      const overIndex =
+        overData?.type === "CARD"
+          ? destCards.findIndex((card) => card.publicId === over.id)
+          : -1;
+      const isBelowOverItem =
+        active.rect.current.translated &&
+        active.rect.current.translated.top > over.rect.top + over.rect.height;
+      const insertAt =
+        overIndex === -1
+          ? destCards.length
+          : overIndex + (isBelowOverItem ? 1 : 0);
+
+      debugBoardDnd("cross-list-preview", {
+        cardPublicId: String(active.id),
+        sourceListPublicId,
+        destinationListPublicId: destListPublicId,
+        overId: String(over.id),
+        insertAt,
+      });
+
+      return {
+        ...lists,
+        [sourceListPublicId]: [
+          ...sourceCards.slice(0, activeIndex),
+          ...sourceCards.slice(activeIndex + 1),
+        ],
+        [destListPublicId]: [
+          ...destCards.slice(0, insertAt),
+          movedCard,
+          ...destCards.slice(insertAt),
+        ],
+      };
+    });
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent): void => {
@@ -711,32 +635,61 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
 
     if (activeData?.type === "CARD") {
       if (!over || !canEditCard || isPlaceholderPublicId(activeIdStr)) {
-        dragCardsByListRef.current = null;
-        dragPreviewPositionRef.current = null;
         setDragCardsByList(null);
         return;
       }
 
-      const dropIntent = dragPreviewPositionRef.current;
-      if (!dropIntent || isPlaceholderPublicId(dropIntent.listPublicId)) {
-        dragCardsByListRef.current = null;
-        dragPreviewPositionRef.current = null;
+      const finalLists = dragCardsByList ?? baseCardsByList;
+      const overData = getEventData(over);
+      const destListPublicId = getDestinationListPublicId(over);
+      if (!destListPublicId || isPlaceholderPublicId(destListPublicId)) {
         setDragCardsByList(null);
         return;
       }
+
+      const destCards = finalLists[destListPublicId] ?? [];
+      const activeIndex = destCards.findIndex(
+        (card) => card.publicId === active.id,
+      );
+      if (activeIndex === -1) {
+        setDragCardsByList(null);
+        return;
+      }
+
+      const rawOverIndex =
+        overData?.type === "CARD"
+          ? destCards.findIndex((card) => card.publicId === over.id)
+          : -1;
+      const overIndex =
+        rawOverIndex === -1 ? destCards.length - 1 : rawOverIndex;
+      const finalPreview = {
+        ...finalLists,
+        [destListPublicId]: arrayMove(destCards, activeIndex, overIndex),
+      };
+      const finalIndex =
+        finalPreview[destListPublicId]?.findIndex(
+          (card) => card.publicId === active.id,
+        ) ?? overIndex;
+
+      debugBoardDnd("end", {
+        cardPublicId: activeIdStr,
+        destinationListPublicId: destListPublicId,
+        overId: String(over.id),
+        activeIndex,
+        overIndex,
+        finalIndex,
+      });
+
+      setDragCardsByList(finalPreview);
 
       updateCardMutation.mutate(
         {
           cardPublicId: activeIdStr,
-          listPublicId: dropIntent.listPublicId,
-          index: dropIntent.index,
+          listPublicId: destListPublicId,
+          index: finalIndex,
         },
         {
-          onSettled: () => {
-            dragCardsByListRef.current = null;
-            dragPreviewPositionRef.current = null;
-            setDragCardsByList(null);
-          },
+          onSettled: () => setDragCardsByList(null),
         },
       );
     }
@@ -745,8 +698,6 @@ export default function BoardPage({ isTemplate }: { isTemplate?: boolean }) {
   const handleDragCancel = (): void => {
     setActiveId(null);
     setActiveWidth(null);
-    dragCardsByListRef.current = null;
-    dragPreviewPositionRef.current = null;
     setDragCardsByList(null);
   };
 

@@ -7,7 +7,6 @@ import {
 } from "@dnd-kit/core";
 
 import type { DragData } from "./types";
-import { getNearestCardId } from "./card-position";
 
 function getData(
   entity: { data: { current: unknown } } | undefined,
@@ -15,12 +14,10 @@ function getData(
   return entity?.data.current as DragData | undefined;
 }
 
-export function createBoardCollisionDetection(
-  lastOverIdRef: { current: UniqueIdentifier | null },
-  pointerYRef: { current: number | null },
-): CollisionDetection {
+export function createBoardCollisionDetection(lastOverIdRef: {
+  current: UniqueIdentifier | null;
+}): CollisionDetection {
   return (args) => {
-    pointerYRef.current = args.pointerCoordinates?.y ?? null;
     const activeData = getData(args.active);
 
     if (activeData?.type === "LIST") {
@@ -32,36 +29,13 @@ export function createBoardCollisionDetection(
       });
     }
 
-    const pointerIntersections = pointerWithin(args).filter(
-      (collision) => collision.id !== args.active.id,
-    );
-    const intersections = (
+    const pointerIntersections = pointerWithin(args);
+    const intersections =
       pointerIntersections.length > 0
         ? pointerIntersections
-        : rectIntersection(args)
-    ).filter((collision) => collision.id !== args.active.id);
+        : rectIntersection(args);
 
-    // Nested card, body, and list drop targets can all intersect at once.
-    // Always prefer the most specific target so a list's sortable target does
-    // not swallow card drops over its body.
-    const prioritizedTypes: DragData["type"][] = ["CARD", "LIST_BODY", "LIST"];
-    let overId: UniqueIdentifier | null = null;
-
-    for (const type of prioritizedTypes) {
-      const collision = intersections.find((candidate) => {
-        const container = args.droppableContainers.find(
-          (item) => item.id === candidate.id,
-        );
-        return getData(container)?.type === type;
-      });
-
-      if (collision) {
-        overId = collision.id;
-        break;
-      }
-    }
-
-    overId ??= getFirstCollision(intersections, "id");
+    let overId = getFirstCollision(intersections, "id");
 
     if (overId != null) {
       const overContainer = args.droppableContainers.find(
@@ -80,28 +54,10 @@ export function createBoardCollisionDetection(
         });
 
         if (cardContainers.length > 0) {
-          const pointerY = args.pointerCoordinates?.y;
-          const closest =
-            pointerY === undefined
-              ? closestCenter({
-                  ...args,
-                  droppableContainers: cardContainers,
-                })[0]?.id
-              : getNearestCardId(
-                  pointerY,
-                  cardContainers.flatMap((container) => {
-                    const rect = args.droppableRects.get(container.id);
-                    return rect
-                      ? [
-                          {
-                            id: container.id,
-                            top: rect.top,
-                            height: rect.height,
-                          },
-                        ]
-                      : [];
-                  }),
-                );
+          const closest = closestCenter({
+            ...args,
+            droppableContainers: cardContainers,
+          })[0]?.id;
 
           if (closest != null) {
             overId = closest;

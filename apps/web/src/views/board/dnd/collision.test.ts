@@ -51,8 +51,7 @@ function detectAt(pointerY: number) {
   } as unknown as CollisionArgs;
 
   const lastOverIdRef = { current: null };
-  const pointerYRef = { current: null };
-  return createBoardCollisionDetection(lastOverIdRef, pointerYRef)(args)[0]?.id;
+  return createBoardCollisionDetection(lastOverIdRef)(args)[0]?.id;
 }
 
 describe("board collision detection", () => {
@@ -65,7 +64,9 @@ describe("board collision detection", () => {
   });
 
   it("selects a neighboring card when dropping between cards", () => {
-    expect(detectAt(160)).toBe("card-1");
+    // The lower card is the sortable target at the midpoint, so dnd-kit
+    // inserts the active card immediately before it.
+    expect(detectAt(160)).toBe("card-2");
   });
 
   it("selects the last card when dropping below it", () => {
