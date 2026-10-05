@@ -2,7 +2,6 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "@headlessui/react";
 import { t } from "@lingui/core/macro";
-import { env } from "next-runtime-env";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 import { HiBolt } from "react-icons/hi2";
@@ -32,6 +31,7 @@ import ButtonComponent from "~/components/Button";
 import ReactiveButton from "~/components/ReactiveButton";
 import UserMenu from "~/components/UserMenu";
 import WorkspaceMenu from "~/components/WorkspaceMenu";
+import { env } from "~/env";
 import { useWorkspace } from "~/providers/workspace";
 import { api } from "~/utils/api";
 
@@ -87,8 +87,8 @@ export default function SideNavigation({
 
   const { resolvedTheme } = useTheme();
 
-  const isCloudEnv = env("NEXT_PUBLIC_KAN_ENV") === "cloud";
-  const isEdgeBuild = env("NEXT_PUBLIC_APP_VERSION")?.includes("+") ?? false;
+  const isCloudEnv = env.NEXT_PUBLIC_KAN_ENV === "cloud";
+  const isEdgeBuild = env.NEXT_PUBLIC_APP_VERSION?.includes("+") ?? false;
 
   const isDarkMode = resolvedTheme === "dark";
 

@@ -234,8 +234,8 @@ export default function UserMenu({
                   <Link
                     href={
                       env.NEXT_PUBLIC_APP_VERSION.includes("+")
-                        ? `https://github.com/kanbn/kan/commit/${env.NEXT_PUBLIC_APP_VERSION.split("+")[1]}`
-                        : `https://github.com/kanbn/kan/releases/tag/v${env.NEXT_PUBLIC_APP_VERSION}`
+                        ? `https://github.com/3mfs/kan/commit/${env.NEXT_PUBLIC_APP_VERSION.split("+")[1]}`
+                        : `https://github.com/3mfs/kan/releases/tag/v${env.NEXT_PUBLIC_APP_VERSION}`
                     }
                     target="_blank"
                     rel="noreferrer"
