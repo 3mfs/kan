@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { t } from "@lingui/core/macro";
 import { env } from "next-runtime-env";
 
@@ -20,6 +21,11 @@ export default function AccountSettings() {
   const isCredentialsEnabled =
     env("NEXT_PUBLIC_ALLOW_CREDENTIALS")?.toLowerCase() === "true";
   const appVersion = env("NEXT_PUBLIC_APP_VERSION");
+  const appVersionUrl = appVersion
+    ? appVersion.includes("+")
+      ? `https://github.com/3mfs/kan/commit/${appVersion.split("+")[1]}`
+      : `https://github.com/3mfs/kan/releases/tag/v${appVersion}`
+    : null;
   const { data } = api.user.getUser.useQuery();
 
   return (
@@ -72,9 +78,20 @@ export default function AccountSettings() {
           <h2 className="mb-4 mt-8 text-[14px] font-bold text-neutral-900 dark:text-dark-1000">
             {t`Application version`}
           </h2>
-          <p className="text-sm text-neutral-700 dark:text-dark-900">
-            {appVersion || t`Build information is unavailable.`}
-          </p>
+          {appVersionUrl ? (
+            <Link
+              href={appVersionUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-neutral-700 hover:underline dark:text-dark-900"
+            >
+              {appVersion}
+            </Link>
+          ) : (
+            <p className="text-sm text-neutral-700 dark:text-dark-900">
+              {t`Build information is unavailable.`}
+            </p>
+          )}
         </div>
 
         <div className="mb-8 border-t border-light-300 dark:border-dark-300">
