@@ -9,6 +9,10 @@ import { HiBolt } from "react-icons/hi2";
 import {
   TbLayoutSidebarLeftCollapse,
   TbLayoutSidebarLeftExpand,
+  TbLetterA,
+  TbLetterB,
+  TbLetterE,
+  TbLetterT,
 } from "react-icons/tb";
 import { twMerge } from "tailwind-merge";
 
@@ -84,6 +88,7 @@ export default function SideNavigation({
   const { resolvedTheme } = useTheme();
 
   const isCloudEnv = env("NEXT_PUBLIC_KAN_ENV") === "cloud";
+  const isEdgeBuild = env("NEXT_PUBLIC_APP_VERSION")?.includes("+") ?? false;
 
   const isDarkMode = resolvedTheme === "dark";
 
@@ -162,8 +167,19 @@ export default function SideNavigation({
           <div className="hidden h-[45px] items-center justify-between pb-3 md:flex">
             {!isCollapsed && (
               <Link href="/" className="block">
-                <h1 className="pl-2 text-[16px] font-bold tracking-tight text-neutral-900 dark:text-dark-1000">
+                <h1 className="flex items-center pl-2 text-[16px] font-bold tracking-tight text-neutral-900 dark:text-dark-1000">
                   kan.bn
+                  {isEdgeBuild && (
+                    <span
+                      className="ml-2 inline-flex items-center gap-0.5 text-red-600 dark:text-red-400"
+                      aria-label="BETA"
+                    >
+                      <TbLetterB aria-hidden="true" size={15} />
+                      <TbLetterE aria-hidden="true" size={15} />
+                      <TbLetterT aria-hidden="true" size={15} />
+                      <TbLetterA aria-hidden="true" size={15} />
+                    </span>
+                  )}
                 </h1>
               </Link>
             )}
